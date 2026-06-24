@@ -327,6 +327,25 @@ resource "azurerm_role_assignment" "workload_kv_secrets_user" {
   principal_id         = azurerm_user_assigned_identity.workload.principal_id
 }
 
+resource "azurerm_role_assignment" "workload_openai_user" {
+  scope                = module.ai_foundry.ai_services_id
+  role_definition_name = "Cognitive Services OpenAI User"
+  principal_id         = azurerm_user_assigned_identity.workload.principal_id
+}
+
+resource "azurerm_key_vault_secret" "openai_endpoint" {
+  name         = "openai-endpoint"
+  value        = "https://${var.prefix}-ai-services.openai.azure.com/"
+  key_vault_id = module.key_vault.key_vault_id
+}
+
+resource "azurerm_key_vault_secret" "openai_deployment_name" {
+  name         = "openai-deployment-name"
+  value        = module.ai_foundry.openai_deployment_name
+  key_vault_id = module.key_vault.key_vault_id
+}
+
+
 # =============================================================================
 # Module: Database
 # =============================================================================
