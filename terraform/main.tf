@@ -124,6 +124,7 @@ module "networking" {
   aks_api_subnet_cidr  = var.aks_api_subnet_cidr
   jumpbox_subnet_cidr  = var.jumpbox_subnet_cidr
   public_dns_zone_name = var.domain_name
+  jumpbox_ssh_allowed_source_address_prefix = var.jumpbox_ssh_allowed_source_address_prefix
 }
 
 # =============================================================================

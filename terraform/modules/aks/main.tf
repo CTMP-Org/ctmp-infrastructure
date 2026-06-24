@@ -120,6 +120,9 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # --- Auto-upgrade channel ---
   automatic_upgrade_channel = "patch"
+
+  # --- Enable Role-Based Access Control ---
+  role_based_access_control_enabled = true
 }
 
 # =============================================================================

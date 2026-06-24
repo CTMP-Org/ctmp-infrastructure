@@ -91,7 +91,7 @@ variable "pg_subnet_cidr" {
 variable "jumpbox_ssh_allowed_source_address_prefix" {
   description = "Allowed IP range/CIDR or tag for SSH access to the jumpbox."
   type        = string
-  default     = "*"
+  default     = "203.0.113.0/24"
 }
 
 

@@ -144,6 +144,12 @@ variable "admin_ssh_public_key" {
   default     = ""
 }
 
+variable "jumpbox_ssh_allowed_source_address_prefix" {
+  description = "Allowed IP range/CIDR or tag for SSH access to the jumpbox. Defaults to a restricted documentation range to prevent public exposure."
+  type        = string
+  default     = "203.0.113.0/24"
+}
+
 
 
 

@@ -148,6 +148,7 @@ resource "azurerm_linux_function_app" "main" {
   # --- Network isolation ---
   public_network_access_enabled = false
   virtual_network_subnet_id     = var.func_subnet_id
+  https_only                    = true
 
   # --- Managed Identity: User-Assigned ---
   identity {
