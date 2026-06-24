@@ -1,0 +1,78 @@
+name: "Renew SSL Certificate"
+
+on:
+  schedule:
+    - cron: "0 0 1 */2 *" # Runs at 00:00 on day 1 of every second month (~60 days)
+  workflow_dispatch: # Allows manual trigger to request/renew certificate
+
+permissions:
+  id-token: write # Required for OIDC Azure login
+  contents: read # Required to checkout repo
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_USE_OIDC: true
+
+jobs:
+  renew-cert:
+    name: "Renew Let's Encrypt SSL"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get Runner IP and Key Vault Name
+        run: |
+          RUNNER_IP=$(curl -s https://api.ipify.org | tr -d '\r')
+          echo "RUNNER_IP=$RUNNER_IP" >> $GITHUB_ENV
+          echo "TF_VAR_runner_ip=$RUNNER_IP" >> $GITHUB_ENV
+          
+          # Find the Key Vault name
+          echo "Searching for Key Vault name..."
+          KEY_VAULT_NAME=$(az keyvault list --query "[?contains(name, 'ctmp3-kv')].name" -o tsv | head -n 1 | tr -d '\r')
+          if [ -z "$KEY_VAULT_NAME" ]; then
+            KEY_VAULT_NAME=$(az keyvault list --query "[?tags.project=='ctmp3'].name" -o tsv | head -n 1 | tr -d '\r')
+          fi
+          if [ -z "$KEY_VAULT_NAME" ]; then
+            KEY_VAULT_NAME="ctmp3-kv"
+          fi
+          echo "Found Key Vault Name: $KEY_VAULT_NAME"
+          echo "KEY_VAULT_NAME=$KEY_VAULT_NAME" >> $GITHUB_ENV
+
+      - name: Whitelist IP in Key Vault
+        run: |
+          echo "Adding firewall rule for IP ${{ env.RUNNER_IP }} on Key Vault ${{ env.KEY_VAULT_NAME }}..."
+          az keyvault network-rule add --name "${{ env.KEY_VAULT_NAME }}" --ip-address "${{ env.RUNNER_IP }}"
+          # Sleep to allow rule propagation
+          sleep 60
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Terraform Init
+        run: |
+          cd terraform-cert
+          terraform init
+
+      - name: Terraform Apply
+        run: |
+          cd terraform-cert
+          terraform apply -auto-approve
+
+      - name: Remove IP from Key Vault Firewall
+        if: always() && env.RUNNER_IP != '' && env.KEY_VAULT_NAME != ''
+        run: |
+          echo "Removing firewall rule for IP ${{ env.RUNNER_IP }} from Key Vault ${{ env.KEY_VAULT_NAME }}..."
+          az keyvault network-rule remove --name "${{ env.KEY_VAULT_NAME }}" --ip-address "${{ env.RUNNER_IP }}"
+

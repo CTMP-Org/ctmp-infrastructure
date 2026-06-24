@@ -1,0 +1,194 @@
+name: "Infrastructure CI/CD (Terraform)"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'terraform/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'terraform/**'
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_USE_OIDC: true
+  TF_VAR_user_portal_client_id: ${{ secrets.NEXT_PUBLIC_AZURE_AD_CLIENT_ID }}
+
+jobs:
+  terraform:
+    name: "Terraform"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get Runner IP and Key Vault Name
+        run: |
+          RUNNER_IP=$(curl -s https://api.ipify.org | tr -d '\r')
+          echo "RUNNER_IP=$RUNNER_IP" >> $GITHUB_ENV
+          echo "TF_VAR_runner_ip=$RUNNER_IP" >> $GITHUB_ENV
+          
+          # Find the Key Vault name
+          echo "Searching for Key Vault name..."
+          KEY_VAULT_NAME=$(az keyvault list --query "[?contains(name, 'ctmp3-kv')].name" -o tsv | head -n 1 | tr -d '\r')
+          if [ -z "$KEY_VAULT_NAME" ]; then
+            KEY_VAULT_NAME=$(az keyvault list --query "[?tags.project=='ctmp3'].name" -o tsv | head -n 1 | tr -d '\r')
+          fi
+          if [ -n "$KEY_VAULT_NAME" ]; then
+            echo "KEY_VAULT_NAME=$KEY_VAULT_NAME" >> $GITHUB_ENV
+            echo "Found Key Vault Name: $KEY_VAULT_NAME"
+          else
+            echo "Key Vault not found (it might not be created yet)."
+          fi
+
+      - name: Whitelist IP in Key Vault
+        if: env.KEY_VAULT_NAME != ''
+        run: |
+          echo "Adding firewall rule for IP ${{ env.RUNNER_IP }} on Key Vault ${{ env.KEY_VAULT_NAME }}..."
+          az keyvault network-rule add --name "${{ env.KEY_VAULT_NAME }}" --ip-address "${{ env.RUNNER_IP }}"
+          # Sleep to allow rule propagation
+          sleep 60
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.x"
+          terraform_wrapper: false
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=rg-ctmp3-tfstate" \
+            -backend-config="storage_account_name=stctmp3tfstate" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=ctmp3.terraform.tfstate"
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -out=tfplan
+        continue-on-error: true
+
+      - name: Comment Plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `## Terraform Plan Results 🏗️
+
+            #### Format Check 🖌 \`${{ steps.fmt.outcome }}\`
+            #### Initialization ⚙️ \`${{ steps.init.outcome }}\`
+            #### Validation 🤖 \`${{ steps.validate.outcome }}\`
+            #### Plan 📖 \`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan Output</summary>
+
+            \`\`\`terraform
+            ${{ steps.plan.outputs.stdout }}
+            \`\`\`
+
+            </details>
+
+            > Triggered by **@${{ github.actor }}** on \`${{ github.event.pull_request.head.ref }}\`
+            > *Commit: ${{ github.event.pull_request.head.sha }}*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve tfplan
+
+      - name: Install yq
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Checkout GitOps Repo
+        uses: actions/checkout@v4
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          repository: CTMP-Org/ctmp-gitops
+          token: ${{ secrets.GITOPS_REPO_PAT }}
+          path: ctmp-gitops-repo
+
+      - name: Update GitOps workload identity client ID
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          WORKLOAD_CLIENT_ID="$(terraform output -raw workload_identity_client_id)"
+          export WORKLOAD_CLIENT_ID
+
+          for values_file in \
+            ctmp-gitops-repo/manifests/workload-identity/values.yaml \
+            ctmp-gitops-repo/manifests/admin-service/values.yaml \
+            ctmp-gitops-repo/manifests/auth-service/values.yaml \
+            ctmp-gitops-repo/manifests/student-service/values.yaml \
+            ctmp-gitops-repo/manifests/trainer-service/values.yaml \
+            ctmp-gitops-repo/manifests/analytics-service/values.yaml \
+            ctmp-gitops-repo/manifests/billing-service/values.yaml
+          do
+            yq -i '.workloadIdentity.clientId = strenv(WORKLOAD_CLIENT_ID)' "$values_file"
+          done
+
+      - name: Commit GitOps workload identity values
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          cd ctmp-gitops-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifests/workload-identity/values.yaml \
+            manifests/admin-service/values.yaml \
+            manifests/auth-service/values.yaml \
+            manifests/student-service/values.yaml \
+            manifests/trainer-service/values.yaml \
+            manifests/analytics-service/values.yaml \
+            manifests/billing-service/values.yaml
+          if git diff --cached --quiet; then
+            echo "GitOps workload identity values are already current."
+          else
+            git commit -m "Sync workload identity client ID"
+            git push
+          fi
+
+      - name: Remove IP from Key Vault Firewall
+        if: always() && env.RUNNER_IP != '' && env.KEY_VAULT_NAME != ''
+        run: |
+          echo "Removing firewall rule for IP ${{ env.RUNNER_IP }} from Key Vault ${{ env.KEY_VAULT_NAME }}..."
+          az keyvault network-rule remove --name "${{ env.KEY_VAULT_NAME }}" --ip-address "${{ env.RUNNER_IP }}"
