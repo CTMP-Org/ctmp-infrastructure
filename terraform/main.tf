@@ -116,14 +116,14 @@ module "networking" {
   prefix              = var.prefix
   tags                = local.common_tags
 
-  vnet_address_space   = var.vnet_address_space
-  appgw_subnet_cidr    = var.appgw_subnet_cidr
-  aks_subnet_cidr      = var.aks_subnet_cidr
-  func_subnet_cidr     = var.func_subnet_cidr
-  pe_subnet_cidr       = var.pe_subnet_cidr
-  aks_api_subnet_cidr  = var.aks_api_subnet_cidr
-  jumpbox_subnet_cidr  = var.jumpbox_subnet_cidr
-  public_dns_zone_name = var.domain_name
+  vnet_address_space                        = var.vnet_address_space
+  appgw_subnet_cidr                         = var.appgw_subnet_cidr
+  aks_subnet_cidr                           = var.aks_subnet_cidr
+  func_subnet_cidr                          = var.func_subnet_cidr
+  pe_subnet_cidr                            = var.pe_subnet_cidr
+  aks_api_subnet_cidr                       = var.aks_api_subnet_cidr
+  jumpbox_subnet_cidr                       = var.jumpbox_subnet_cidr
+  public_dns_zone_name                      = var.domain_name
   jumpbox_ssh_allowed_source_address_prefix = var.jumpbox_ssh_allowed_source_address_prefix
 }
 

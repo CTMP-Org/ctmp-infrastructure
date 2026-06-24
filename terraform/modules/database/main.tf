@@ -21,12 +21,12 @@ resource "azurerm_private_dns_zone_virtual_network_link" "pg" {
 }
 
 resource "azurerm_postgresql_flexible_server" "main" {
-  name                   = "${var.prefix}-pg-server"
-  resource_group_name    = var.resource_group_name
-  location               = var.location
-  version                = "14"
-  delegated_subnet_id    = var.pg_subnet_id
-  private_dns_zone_id    = azurerm_private_dns_zone.pg.id
+  name                = "${var.prefix}-pg-server"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  version             = "14"
+  delegated_subnet_id = var.pg_subnet_id
+  private_dns_zone_id = azurerm_private_dns_zone.pg.id
 
   storage_mb = 32768
   sku_name   = var.sku_name
