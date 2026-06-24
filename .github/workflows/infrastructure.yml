@@ -190,13 +190,13 @@ jobs:
           export WORKLOAD_CLIENT_ID
 
           for values_file in \
-            ctmp-gitops-repo/manifests/workload-identity/${{ env.VALUES_FILE }} \
-            ctmp-gitops-repo/manifests/admin-service/${{ env.VALUES_FILE }} \
-            ctmp-gitops-repo/manifests/auth-service/${{ env.VALUES_FILE }} \
-            ctmp-gitops-repo/manifests/student-service/${{ env.VALUES_FILE }} \
-            ctmp-gitops-repo/manifests/trainer-service/${{ env.VALUES_FILE }} \
-            ctmp-gitops-repo/manifests/analytics-service/${{ env.VALUES_FILE }} \
-            ctmp-gitops-repo/manifests/billing-service/${{ env.VALUES_FILE }}
+            ../ctmp-gitops-repo/manifests/workload-identity/${{ env.VALUES_FILE }} \
+            ../ctmp-gitops-repo/manifests/admin-service/${{ env.VALUES_FILE }} \
+            ../ctmp-gitops-repo/manifests/auth-service/${{ env.VALUES_FILE }} \
+            ../ctmp-gitops-repo/manifests/student-service/${{ env.VALUES_FILE }} \
+            ../ctmp-gitops-repo/manifests/trainer-service/${{ env.VALUES_FILE }} \
+            ../ctmp-gitops-repo/manifests/analytics-service/${{ env.VALUES_FILE }} \
+            ../ctmp-gitops-repo/manifests/billing-service/${{ env.VALUES_FILE }}
           do
             yq -i '.workloadIdentity.clientId = strenv(WORKLOAD_CLIENT_ID)' "$values_file"
           done
@@ -204,7 +204,7 @@ jobs:
       - name: Commit GitOps workload identity values
         if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') && github.event_name == 'push'
         run: |
-          cd ctmp-gitops-repo
+          cd ../ctmp-gitops-repo
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add manifests/*/values-dev.yaml manifests/*/values-prod.yaml
