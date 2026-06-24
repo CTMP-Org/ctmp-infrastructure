@@ -5,12 +5,6 @@
 # stores credentials in Key Vault, and configures private DNS resolution.
 # =============================================================================
 
-resource "random_password" "pg_admin_password" {
-  length           = 16
-  special          = true
-  override_special = "!#$%&*()-_=+[]{}<>:?"
-}
-
 resource "azurerm_private_dns_zone" "pg" {
   name                = "${var.prefix}-pg-dns.postgres.database.azure.com"
   resource_group_name = var.resource_group_name
@@ -33,8 +27,6 @@ resource "azurerm_postgresql_flexible_server" "main" {
   version                = "14"
   delegated_subnet_id    = var.pg_subnet_id
   private_dns_zone_id    = azurerm_private_dns_zone.pg.id
-  administrator_login    = var.admin_username
-  administrator_password = random_password.pg_admin_password.result
 
   storage_mb = 32768
   sku_name   = var.sku_name
