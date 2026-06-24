@@ -1,6 +1,6 @@
 # =============================================================================
 # Cross-Cloud GitOps Training Portal — Dev Variables
-# Trigger: Secrets syntax fix in reusable workflows
+# Trigger: Upgrade trivy-action to v0.36.0
 # =============================================================================
 
 domain_name = "dev.training.sneakertail.online"
