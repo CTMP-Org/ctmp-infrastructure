@@ -13,3 +13,9 @@ variable "certificate_name" {
   type        = string
   default     = "sneakertail-cert"
 }
+
+variable "remote_state_key" {
+  description = "The key of the main infrastructure remote state file."
+  type        = string
+  default     = "ctmp3dev.terraform.tfstate"
+}

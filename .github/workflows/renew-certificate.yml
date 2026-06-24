@@ -23,6 +23,22 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Determine Environment Settings
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "ENV_NAME=prod" >> $GITHUB_ENV
+            echo "PREFIX=ctmp3" >> $GITHUB_ENV
+            echo "RG_NAME=rg-ctmp3prod" >> $GITHUB_ENV
+            echo "TF_KEY=ctmp3prod.terraform.tfstate" >> $GITHUB_ENV
+            echo "CERT_KEY=ctmp3prod.cert.tfstate" >> $GITHUB_ENV
+          else
+            echo "ENV_NAME=dev" >> $GITHUB_ENV
+            echo "PREFIX=ctmp3dev" >> $GITHUB_ENV
+            echo "RG_NAME=rg-ctmp3" >> $GITHUB_ENV
+            echo "TF_KEY=ctmp3dev.terraform.tfstate" >> $GITHUB_ENV
+            echo "CERT_KEY=ctmp3dev.cert.tfstate" >> $GITHUB_ENV
+          fi
+
       - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
@@ -36,22 +52,24 @@ jobs:
           echo "RUNNER_IP=$RUNNER_IP" >> $GITHUB_ENV
           echo "TF_VAR_runner_ip=$RUNNER_IP" >> $GITHUB_ENV
           
-          # Find the Key Vault name
+          # Find the Key Vault name using the dynamic prefix
           echo "Searching for Key Vault name..."
-          KEY_VAULT_NAME=$(az keyvault list --query "[?contains(name, 'ctmp3-kv')].name" -o tsv | head -n 1 | tr -d '\r')
+          KEY_VAULT_NAME=$(az keyvault list --query "[?contains(name, '${{ env.PREFIX }}-kv')].name" -o tsv | head -n 1 | tr -d '\r')
           if [ -z "$KEY_VAULT_NAME" ]; then
-            KEY_VAULT_NAME=$(az keyvault list --query "[?tags.project=='ctmp3'].name" -o tsv | head -n 1 | tr -d '\r')
+            KEY_VAULT_NAME=$(az keyvault list --query "[?tags.project=='ctmp3' && tags.environment=='${{ env.ENV_NAME }}'].name" -o tsv | head -n 1 | tr -d '\r')
           fi
-          if [ -z "$KEY_VAULT_NAME" ]; then
-            KEY_VAULT_NAME="ctmp3-kv"
+          if [ -n "$KEY_VAULT_NAME" ]; then
+            echo "KEY_VAULT_NAME=$KEY_VAULT_NAME" >> $GITHUB_ENV
+            echo "Found Key Vault Name: $KEY_VAULT_NAME"
+          else
+            echo "Key Vault not found (it might not be created yet)."
           fi
-          echo "Found Key Vault Name: $KEY_VAULT_NAME"
-          echo "KEY_VAULT_NAME=$KEY_VAULT_NAME" >> $GITHUB_ENV
 
       - name: Whitelist IP in Key Vault
+        if: env.KEY_VAULT_NAME != ''
         run: |
-          echo "Adding firewall rule for IP ${{ env.RUNNER_IP }} on Key Vault ${{ env.KEY_VAULT_NAME }}..."
-          az keyvault network-rule add --name "${{ env.KEY_VAULT_NAME }}" --ip-address "${{ env.RUNNER_IP }}"
+          echo "Adding firewall rule for IP ${{ env.RUNNER_IP }} on Key Vault ${{ env.KEY_VAULT_NAME }} in Resource Group ${{ env.RG_NAME }}..."
+          az keyvault network-rule add --name "${{ env.KEY_VAULT_NAME }}" --resource-group "${{ env.RG_NAME }}" --ip-address "${{ env.RUNNER_IP }}"
           # Sleep to allow rule propagation
           sleep 60
 
@@ -63,16 +81,20 @@ jobs:
       - name: Terraform Init
         run: |
           cd terraform-cert
-          terraform init
+          terraform init \
+            -backend-config="resource_group_name=rg-ctmp3-tfstate" \
+            -backend-config="storage_account_name=stctmp3tfstate" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=${{ env.CERT_KEY }}"
 
       - name: Terraform Apply
         run: |
           cd terraform-cert
-          terraform apply -auto-approve
+          terraform apply -var="remote_state_key=${{ env.TF_KEY }}" -auto-approve
 
       - name: Remove IP from Key Vault Firewall
         if: always() && env.RUNNER_IP != '' && env.KEY_VAULT_NAME != ''
         run: |
-          echo "Removing firewall rule for IP ${{ env.RUNNER_IP }} from Key Vault ${{ env.KEY_VAULT_NAME }}..."
-          az keyvault network-rule remove --name "${{ env.KEY_VAULT_NAME }}" --ip-address "${{ env.RUNNER_IP }}"
+          echo "Removing firewall rule for IP ${{ env.RUNNER_IP }} from Key Vault ${{ env.KEY_VAULT_NAME }} in Resource Group ${{ env.RG_NAME }}..."
+          az keyvault network-rule remove --name "${{ env.KEY_VAULT_NAME }}" --resource-group "${{ env.RG_NAME }}" --ip-address "${{ env.RUNNER_IP }}"
 

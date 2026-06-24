@@ -40,7 +40,7 @@ data "terraform_remote_state" "main" {
     resource_group_name  = "rg-ctmp3-tfstate"
     storage_account_name = "stctmp3tfstate"
     container_name       = "tfstate"
-    key                  = "ctmp3.terraform.tfstate"
+    key                  = var.remote_state_key
     use_oidc             = true
   }
 }
