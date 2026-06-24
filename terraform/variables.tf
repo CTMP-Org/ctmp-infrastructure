@@ -150,6 +150,44 @@ variable "jumpbox_ssh_allowed_source_address_prefix" {
   default     = "203.0.113.0/24"
 }
 
+# --- AKS Node Pool Sizing ---
+
+variable "system_pool_node_count" {
+  description = "Target node count for the AKS system node pool."
+  type        = number
+  default     = 2
+}
+
+variable "system_pool_min_count" {
+  description = "Minimum node count for the AKS system node pool."
+  type        = number
+  default     = 2
+}
+
+variable "system_pool_max_count" {
+  description = "Maximum node count for the AKS system node pool."
+  type        = number
+  default     = 4
+}
+
+variable "user_pool_node_count" {
+  description = "Target node count for the AKS user node pool."
+  type        = number
+  default     = 2
+}
+
+variable "user_pool_min_count" {
+  description = "Minimum node count for the AKS user node pool."
+  type        = number
+  default     = 2
+}
+
+variable "user_pool_max_count" {
+  description = "Maximum node count for the AKS user node pool."
+  type        = number
+  default     = 6
+}
+
 
 
 
