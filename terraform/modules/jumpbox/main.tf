@@ -6,16 +6,17 @@
 # to interact with the private AKS API server endpoint.
 # =============================================================================
 
-# --- Generate admin password dynamically ---
-resource "random_password" "jumpbox" {
-  length           = 16
-  special          = true
-  override_special = "!#$%&*()-_=+[]{}<>:?"
+# --- Generate SSH Key dynamically if not provided ---
+resource "tls_private_key" "jumpbox" {
+  count     = var.admin_ssh_public_key == "" ? 1 : 0
+  algorithm = "RSA"
+  rsa_bits  = 4096
 }
 
-resource "azurerm_key_vault_secret" "jumpbox_password" {
-  name         = "${var.prefix}-jumpbox-password"
-  value        = random_password.jumpbox.result
+resource "azurerm_key_vault_secret" "jumpbox_private_key" {
+  count        = var.admin_ssh_public_key == "" ? 1 : 0
+  name         = "${var.prefix}-jumpbox-private-key"
+  value        = tls_private_key.jumpbox[0].private_key_pem
   key_vault_id = var.key_vault_id
 }
 
@@ -64,13 +65,17 @@ resource "azurerm_linux_virtual_machine" "jumpbox" {
   resource_group_name             = var.resource_group_name
   size                            = "Standard_D2als_v6" # Cost-effective instance size for jumpbox operations
   admin_username                  = var.admin_username
-  admin_password                  = random_password.jumpbox.result
-  disable_password_authentication = false
+  disable_password_authentication = true
   tags                            = var.tags
 
   network_interface_ids = [
     azurerm_network_interface.jumpbox.id
   ]
+
+  admin_ssh_key {
+    username   = var.admin_username
+    public_key = var.admin_ssh_public_key != "" ? var.admin_ssh_public_key : tls_private_key.jumpbox[0].public_key_openssh
+  }
 
   os_disk {
 
