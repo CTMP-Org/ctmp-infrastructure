@@ -144,3 +144,9 @@ variable "aks_private_dns_zone_id" {
   type        = string
 }
 
+variable "acr_default_action" {
+  description = "Default action for the ACR network rule set ('Allow' or 'Deny')."
+  type        = string
+  default     = "Deny"
+}
+

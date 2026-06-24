@@ -183,7 +183,7 @@ resource "azurerm_container_registry" "main" {
   tags                          = var.tags
 
   network_rule_set {
-    default_action = "Deny"
+    default_action = var.acr_default_action
   }
 }
 

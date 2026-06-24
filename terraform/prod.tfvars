@@ -4,6 +4,7 @@
 
 domain_name = "training.sneakertail.online"
 acr_name    = "ctmp3acr"
+acr_default_action = "Deny"
 environment = "prod"
 prefix      = "ctmp3"
 location    = "centralindia"

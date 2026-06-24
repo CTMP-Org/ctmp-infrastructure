@@ -233,6 +233,7 @@ module "aks" {
   aks_private_dns_zone_id = module.networking.aks_private_dns_zone_id
   acr_private_dns_zone_id = module.networking.acr_private_dns_zone_id
   acr_name                = var.acr_name
+  acr_default_action      = var.acr_default_action
 }
 
 

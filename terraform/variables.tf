@@ -132,6 +132,12 @@ variable "acr_name" {
   default     = "ctmp3acr"
 }
 
+variable "acr_default_action" {
+  description = "Default action for the ACR network rule set ('Allow' or 'Deny')."
+  type        = string
+  default     = "Deny"
+}
+
 variable "runner_ip" {
   description = "The public IP of the GitHub Actions runner to temporarily whitelist in the Key Vault firewall."
   type        = string
