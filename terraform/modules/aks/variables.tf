@@ -9,6 +9,11 @@ variable "resource_group_name" {
   type        = string
 }
 
+variable "resource_group_id" {
+  description = "The ID of the Resource Group created by the root module."
+  type        = string
+}
+
 variable "location" {
   description = "Azure region for the AKS cluster."
   type        = string

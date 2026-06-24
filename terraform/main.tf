@@ -203,6 +203,7 @@ module "aks" {
   source = "./modules/aks"
 
   resource_group_name = azurerm_resource_group.main.name
+  resource_group_id   = azurerm_resource_group.main.id
   location            = var.location
   prefix              = var.prefix
   tags                = local.common_tags

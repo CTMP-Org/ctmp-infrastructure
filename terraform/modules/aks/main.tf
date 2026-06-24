@@ -251,12 +251,8 @@ resource "azurerm_role_assignment" "aks_api_subnet_contributor" {
 # the Application Gateway and its Public IP address to read and resolve public
 # IP properties.
 # =============================================================================
-data "azurerm_resource_group" "main" {
-  name = var.resource_group_name
-}
-
 resource "azurerm_role_assignment" "agic_rg_reader" {
-  scope                = data.azurerm_resource_group.main.id
+  scope                = var.resource_group_id
   role_definition_name = "Reader"
   principal_id         = azurerm_kubernetes_cluster.main.ingress_application_gateway[0].ingress_application_gateway_identity[0].object_id
 }

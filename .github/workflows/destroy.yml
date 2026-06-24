@@ -2,6 +2,15 @@ name: "Infrastructure Destroy (Terraform)"
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to destroy (dev, prod)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
 
 permissions:
   id-token: write
@@ -16,7 +25,7 @@ env:
 
 jobs:
   destroy:
-    name: "Terraform Destroy"
+    name: "Terraform Destroy (${{ github.event.inputs.environment }})"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -24,6 +33,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Determine Environment Settings
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "prod" ]; then
+            echo "ENV_NAME=prod" >> $GITHUB_ENV
+            echo "PREFIX=ctmp3" >> $GITHUB_ENV
+            echo "TF_KEY=ctmp3prod.terraform.tfstate" >> $GITHUB_ENV
+            echo "TF_VARS_FILE=prod.tfvars" >> $GITHUB_ENV
+          else
+            echo "ENV_NAME=dev" >> $GITHUB_ENV
+            echo "PREFIX=ctmp3dev" >> $GITHUB_ENV
+            echo "TF_KEY=ctmp3dev.terraform.tfstate" >> $GITHUB_ENV
+            echo "TF_VARS_FILE=dev.tfvars" >> $GITHUB_ENV
+          fi
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -38,11 +61,11 @@ jobs:
           echo "RUNNER_IP=$RUNNER_IP" >> $GITHUB_ENV
           echo "TF_VAR_runner_ip=$RUNNER_IP" >> $GITHUB_ENV
           
-          # Find the Key Vault name
+          # Find the Key Vault name using the dynamic prefix
           echo "Searching for Key Vault name..."
-          KEY_VAULT_NAME=$(az keyvault list --query "[?contains(name, 'ctmp3-kv')].name" -o tsv | head -n 1 | tr -d '\r')
+          KEY_VAULT_NAME=$(az keyvault list --query "[?contains(name, '${{ env.PREFIX }}-kv')].name" -o tsv | head -n 1 | tr -d '\r')
           if [ -z "$KEY_VAULT_NAME" ]; then
-            KEY_VAULT_NAME=$(az keyvault list --query "[?tags.project=='ctmp3'].name" -o tsv | head -n 1 | tr -d '\r')
+            KEY_VAULT_NAME=$(az keyvault list --query "[?tags.project=='ctmp3' && tags.environment=='${{ env.ENV_NAME }}'].name" -o tsv | head -n 1 | tr -d '\r')
           fi
           if [ -n "$KEY_VAULT_NAME" ]; then
             echo "KEY_VAULT_NAME=$KEY_VAULT_NAME" >> $GITHUB_ENV
@@ -71,10 +94,10 @@ jobs:
             -backend-config="resource_group_name=rg-ctmp3-tfstate" \
             -backend-config="storage_account_name=stctmp3tfstate" \
             -backend-config="container_name=tfstate" \
-            -backend-config="key=ctmp3.terraform.tfstate"
+            -backend-config="key=${{ env.TF_KEY }}"
 
       - name: Terraform Destroy
-        run: terraform destroy -auto-approve
+        run: terraform destroy -var-file="${{ env.TF_VARS_FILE }}" -auto-approve
 
       - name: Remove IP from Key Vault Firewall
         if: always() && env.RUNNER_IP != '' && env.KEY_VAULT_NAME != ''
