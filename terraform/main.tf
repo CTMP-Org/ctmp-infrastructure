@@ -97,6 +97,7 @@ locals {
   common_tags = merge(var.tags, {
     project     = "ctmp3"
     environment = var.environment
+    owner       = var.owner
     managed_by  = "terraform"
     region      = var.location
   })

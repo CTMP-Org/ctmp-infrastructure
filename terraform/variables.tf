@@ -44,6 +44,12 @@ variable "tags" {
   default     = {}
 }
 
+variable "owner" {
+  description = "The owner or team responsible for these resources."
+  type        = string
+  default     = "CTMP-Org"
+}
+
 # -----------------------------------------------------------------------------
 # Networking
 # -----------------------------------------------------------------------------
