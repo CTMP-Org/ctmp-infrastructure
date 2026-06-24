@@ -315,7 +315,7 @@ resource "azurerm_federated_identity_credential" "workload" {
   audience                  = ["api://AzureADTokenExchange"]
   issuer                    = module.aks.aks_oidc_issuer_url
   user_assigned_identity_id = azurerm_user_assigned_identity.workload.id
-  subject                   = "system:serviceaccount:training-portal:ctmp-workload-sa"
+  subject                   = "system:serviceaccount:${var.environment}:ctmp-workload-sa"
 }
 
 resource "azurerm_role_assignment" "workload_kv_secrets_user" {
