@@ -1,9 +1,4 @@
-# =============================================================================
-# Application Gateway Module — Variables
-# =============================================================================
-# Inputs for the WAF-enabled Application Gateway with public IP.
-# This is the ONLY resource that exposes a public IP in the entire infra.
-# =============================================================================
+
 
 variable "resource_group_name" {
   description = "Resource group for the Application Gateway resources."
@@ -27,18 +22,10 @@ variable "tags" {
   default     = {}
 }
 
-# -----------------------------------------------------------------------------
-# Networking
-# -----------------------------------------------------------------------------
-
 variable "appgw_subnet_id" {
   description = "Subnet ID for the Application Gateway deployment."
   type        = string
 }
-
-# -----------------------------------------------------------------------------
-# WAF Configuration
-# -----------------------------------------------------------------------------
 
 variable "waf_mode" {
   description = "WAF mode: Detection or Prevention."
@@ -51,10 +38,6 @@ variable "owasp_ruleset_version" {
   type        = string
   default     = "3.2"
 }
-
-# -----------------------------------------------------------------------------
-# Gateway SKU
-# -----------------------------------------------------------------------------
 
 variable "sku_name" {
   description = "SKU name for the Application Gateway."
@@ -73,10 +56,6 @@ variable "capacity" {
   type        = number
   default     = 2
 }
-
-# -----------------------------------------------------------------------------
-# Domain Configuration
-# -----------------------------------------------------------------------------
 
 variable "domain_name" {
   description = "Domain name used in Application Gateway listener host names."

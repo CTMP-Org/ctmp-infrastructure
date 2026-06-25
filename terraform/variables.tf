@@ -1,13 +1,4 @@
-# =============================================================================
-# Cross-Cloud GitOps Training Portal — Global Variables
-# =============================================================================
-# Central configuration for all modules. Override via terraform.tfvars or
-# environment variables (TF_VAR_xxx).
-# =============================================================================
 
-# -----------------------------------------------------------------------------
-# General
-# -----------------------------------------------------------------------------
 
 variable "resource_group_name" {
   description = "Name of the Azure Resource Group for all resources."
@@ -49,10 +40,6 @@ variable "owner" {
   type        = string
   default     = "CTMP-Org"
 }
-
-# -----------------------------------------------------------------------------
-# Networking
-# -----------------------------------------------------------------------------
 
 variable "vnet_address_space" {
   description = "Address space for the Virtual Network."
@@ -96,19 +83,11 @@ variable "jumpbox_subnet_cidr" {
   default     = "10.0.9.0/24"
 }
 
-# -----------------------------------------------------------------------------
-# Domain & DNS
-# -----------------------------------------------------------------------------
-
 variable "domain_name" {
   description = "Public domain name for the training portal DNS zone."
   type        = string
   default     = "training.sneakertail.online"
 }
-
-# -----------------------------------------------------------------------------
-# AKS Compute
-# -----------------------------------------------------------------------------
 
 variable "system_node_vm_size" {
   description = "VM size for the AKS system (default) node pool."
@@ -121,10 +100,6 @@ variable "user_node_vm_size" {
   type        = string
   default     = "Standard_D2als_v6"
 }
-
-# -----------------------------------------------------------------------------
-# ACR
-# -----------------------------------------------------------------------------
 
 variable "acr_name" {
   description = "Globally unique name for Azure Container Registry (alphanumeric only)."
@@ -161,8 +136,6 @@ variable "jumpbox_ssh_allowed_source_address_prefix" {
   type        = string
   default     = "203.0.113.0/24"
 }
-
-# --- AKS Node Pool Sizing ---
 
 variable "system_pool_node_count" {
   description = "Target node count for the AKS system node pool."

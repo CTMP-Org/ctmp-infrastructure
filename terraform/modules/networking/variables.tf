@@ -1,8 +1,4 @@
-# =============================================================================
-# Networking Module — Variables
-# =============================================================================
-# Defines all input parameters for the VNet, subnets, NSGs, and DNS zones.
-# =============================================================================
+
 
 variable "resource_group_name" {
   description = "Name of the resource group where networking resources will be created."
@@ -25,10 +21,6 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
-
-# -----------------------------------------------------------------------------
-# VNet & Subnet CIDR Configuration
-# -----------------------------------------------------------------------------
 
 variable "vnet_address_space" {
   description = "Address space for the Virtual Network."
@@ -72,10 +64,6 @@ variable "jumpbox_subnet_cidr" {
   default     = "10.0.9.0/24"
 }
 
-# -----------------------------------------------------------------------------
-# DNS Configuration
-# -----------------------------------------------------------------------------
-
 variable "public_dns_zone_name" {
   description = "Public DNS zone name for external-facing services."
   type        = string
@@ -93,5 +81,4 @@ variable "jumpbox_ssh_allowed_source_address_prefix" {
   type        = string
   default     = "203.0.113.0/24"
 }
-
 

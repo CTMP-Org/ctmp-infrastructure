@@ -1,23 +1,4 @@
-# =============================================================================
-# Cross-Cloud GitOps Training Portal — Root Terraform Configuration
-# =============================================================================
-# Orchestrates all child modules to deploy the complete infrastructure in
-# Azure Central India. Every resource is locked to centralindia.
-#
-# Architecture:
-#   - Networking: VNet with 5 subnets, 4 NSGs (zero-trust), Public/Private DNS
-#   - App Gateway: WAF_v2 — the ONLY public IP in the infrastructure
-#   - AKS: Private cluster with AGIC, system + user node pools (Standard_D2s_v5)
-#   - Key Vault: RBAC-enabled, private endpoint only
-#   - Function App: Premium EP1, VNet-integrated, User-Assigned Managed Identity
-#   - AI Foundry: Hub + Project + GPT-4o, all private
-#
-# Remote State Backend:
-#   Stored in Azure Storage Account. Create the storage account manually first:
-#     az group create -n rg-ctmp3-tfstate -l centralindia
-#     az storage account create -n stctmp3tfstate -g rg-ctmp3-tfstate -l centralindia --sku Standard_LRS
-#     az storage container create -n tfstate --account-name stctmp3tfstate
-# =============================================================================
+
 
 terraform {
   required_version = ">= 1.9.0"
@@ -50,13 +31,9 @@ terraform {
     storage_account_name = "stctmp3tfstate"
     container_name       = "tfstate"
     key                  = "ctmp3.terraform.tfstate"
-    use_oidc             = true # GitHub Actions OIDC — no client secrets
+    use_oidc             = true 
   }
 }
-
-# -----------------------------------------------------------------------------
-# Provider Configuration — locked to Central India
-# -----------------------------------------------------------------------------
 
 provider "azurerm" {
   features {
@@ -68,30 +45,18 @@ provider "azurerm" {
       prevent_deletion_if_contains_resources = true
     }
   }
-  use_oidc = true # OIDC for CI/CD pipelines
+  use_oidc = true 
 }
 
 provider "azapi" {}
 
-# -----------------------------------------------------------------------------
-# Data Sources
-# -----------------------------------------------------------------------------
-
 data "azurerm_client_config" "current" {}
-
-# -----------------------------------------------------------------------------
-# Resource Group
-# -----------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "main" {
   name     = var.resource_group_name
   location = var.location
   tags     = local.common_tags
 }
-
-# -----------------------------------------------------------------------------
-# Locals
-# -----------------------------------------------------------------------------
 
 locals {
   common_tags = merge(var.tags, {
@@ -102,12 +67,6 @@ locals {
     region      = var.location
   })
 }
-
-# =============================================================================
-# Module: Networking
-# =============================================================================
-# Creates VNet, subnets, NSGs (zero-trust), Public DNS, Private DNS zones
-# =============================================================================
 
 module "networking" {
   source = "./modules/networking"
@@ -127,12 +86,6 @@ module "networking" {
   public_dns_zone_name                      = var.domain_name
   jumpbox_ssh_allowed_source_address_prefix = var.jumpbox_ssh_allowed_source_address_prefix
 }
-
-# =============================================================================
-# Module: Application Gateway (deploy BEFORE AKS so AGIC can reference it)
-# =============================================================================
-# The ONLY resource with a public IP. WAF_v2 with OWASP 3.2 in Prevention mode.
-# =============================================================================
 
 module "app_gateway" {
   source = "./modules/app_gateway"
@@ -155,15 +108,6 @@ resource "azurerm_role_assignment" "appgw_kv_secrets_user" {
   principal_id         = module.app_gateway.identity_principal_id
 }
 
-
-
-
-# =============================================================================
-# Module: Key Vault
-# =============================================================================
-# RBAC-enabled, private endpoint only. No public network access.
-# =============================================================================
-
 module "key_vault" {
   source = "./modules/key_vault"
 
@@ -181,24 +125,14 @@ module "key_vault" {
   runner_ip                  = var.runner_ip
 }
 
-# =============================================================================
-# Key Vault Secrets
-# =============================================================================
-
 resource "azurerm_key_vault_secret" "user_portal_client_id" {
   name         = "user-portal-client-id"
   value        = var.user_portal_client_id
   key_vault_id = module.key_vault.key_vault_id
 
-  # Only create the secret if the variable is provided
+  
   count = var.user_portal_client_id != "" ? 1 : 0
 }
-
-# =============================================================================
-# Module: AKS
-# =============================================================================
-# Private AKS cluster with AGIC, Standard_D2s_v5 node pools, ACR integration.
-# =============================================================================
 
 module "aks" {
   source = "./modules/aks"
@@ -209,7 +143,7 @@ module "aks" {
   prefix              = var.prefix
   tags                = local.common_tags
 
-  # Node pool sizing — Standard_D2s_v5 default, override via variables
+  
   default_node_pool_vm_size = var.system_node_vm_size
   user_node_pool_vm_size    = var.user_node_vm_size
 
@@ -221,13 +155,13 @@ module "aks" {
   user_pool_min_count  = var.user_pool_min_count
   user_pool_max_count  = var.user_pool_max_count
 
-  # Networking
+  
   aks_subnet_id     = module.networking.aks_subnet_id
   aks_api_subnet_id = module.networking.aks_api_subnet_id
   appgw_id          = module.app_gateway.app_gateway_id
   appgw_subnet_id   = module.networking.appgw_subnet_id
 
-  # ACR private endpoint
+  
   pe_subnet_id            = module.networking.pe_subnet_id
   vnet_id                 = module.networking.vnet_id
   aks_private_dns_zone_id = module.networking.aks_private_dns_zone_id
@@ -235,14 +169,6 @@ module "aks" {
   acr_name                = var.acr_name
   acr_default_action      = var.acr_default_action
 }
-
-
-# =============================================================================
-# Module: Function App
-# =============================================================================
-# Premium EP1, VNet-integrated, User-Assigned Managed Identity for AWS OIDC.
-# Triggered by Azure Storage Queue messages from the student-service.
-# =============================================================================
 
 module "function_app" {
   source = "./modules/function_app"
@@ -261,13 +187,6 @@ module "function_app" {
   key_vault_id              = module.key_vault.key_vault_id
 }
 
-# =============================================================================
-# Module: AI Foundry
-# =============================================================================
-# AI Foundry Hub, Project, and Azure OpenAI (GPT-4o deployment).
-# All resources private, no public network access.
-# =============================================================================
-
 module "ai_foundry" {
   source = "./modules/ai_foundry"
 
@@ -285,12 +204,6 @@ module "ai_foundry" {
   storage_account_id = module.function_app.storage_account_id
 }
 
-# =============================================================================
-# Module: Jumpbox
-# =============================================================================
-# Secure management gateway VM for cluster administrators.
-# =============================================================================
-
 module "jumpbox" {
   source = "./modules/jumpbox"
 
@@ -303,10 +216,6 @@ module "jumpbox" {
   admin_ssh_public_key = var.admin_ssh_public_key
 }
 
-
-# =============================================================================
-# Workload Identity & Pod Federation
-# =============================================================================
 resource "azurerm_user_assigned_identity" "workload" {
   name                = "${var.prefix}-workload-identity"
   resource_group_name = azurerm_resource_group.main.name
@@ -346,13 +255,6 @@ resource "azurerm_key_vault_secret" "openai_deployment_name" {
   key_vault_id = module.key_vault.key_vault_id
 }
 
-
-# =============================================================================
-# Module: Database
-# =============================================================================
-# Provisions Azure Database for PostgreSQL Flexible Server within private VNet.
-# =============================================================================
-
 module "database" {
   source = "./modules/database"
 
@@ -369,14 +271,6 @@ module "database" {
   workload_identity_principal_id = azurerm_user_assigned_identity.workload.principal_id
   workload_identity_name         = azurerm_user_assigned_identity.workload.name
 }
-
-
-# =============================================================================
-# DNS A Record — Point domain to App Gateway public IP
-# =============================================================================
-# After deployment, configure your domain registrar (GoDaddy) to delegate NS
-# authority to the Azure DNS name servers output by this configuration.
-# =============================================================================
 
 resource "azurerm_dns_a_record" "appgw" {
   name                = "@"
@@ -407,13 +301,6 @@ resource "azurerm_dns_a_record" "argocd" {
 
   depends_on = [module.networking]
 }
-
-# =============================================================================
-# Azure Monitor Diagnostic Settings
-# =============================================================================
-# Routes logs and metrics from AKS, App Gateway, Key Vault, and PostgreSQL
-# to the central Log Analytics Workspace.
-# =============================================================================
 
 resource "azurerm_monitor_diagnostic_setting" "aks" {
   name                       = "${var.prefix}-aks-diag"
@@ -470,10 +357,4 @@ resource "azurerm_monitor_diagnostic_setting" "database" {
     category = "AllMetrics"
   }
 }
-
-
-
-
-
-
 

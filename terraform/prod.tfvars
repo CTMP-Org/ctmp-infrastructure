@@ -1,7 +1,4 @@
-# =============================================================================
-# Cross-Cloud GitOps Training Portal — Prod Variables
-# Trigger: Production environment spinup
-# =============================================================================
+
 
 domain_name         = "training.sneakertail.online"
 acr_name            = "ctmp3prodacr"

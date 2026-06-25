@@ -1,6 +1,4 @@
-# =============================================================================
-# AKS Module — Outputs
-# =============================================================================
+
 
 output "aks_cluster_id" {
   description = "Resource ID of the AKS cluster."
@@ -62,7 +60,6 @@ output "cluster_ca_certificate" {
   sensitive   = true
 }
 
-# --- ACR ---
 output "acr_id" {
   description = "Resource ID of the Azure Container Registry."
   value       = azurerm_container_registry.main.id

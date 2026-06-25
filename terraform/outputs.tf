@@ -1,12 +1,4 @@
-# =============================================================================
-# Cross-Cloud GitOps Training Portal — Root Outputs
-# =============================================================================
-# Key outputs from all modules. Used by CI/CD pipelines, GitOps, and operators.
-# =============================================================================
 
-# -----------------------------------------------------------------------------
-# Networking
-# -----------------------------------------------------------------------------
 
 output "vnet_id" {
   description = "Resource ID of the Virtual Network."
@@ -22,18 +14,10 @@ output "dns_name_servers" {
   value       = module.networking.public_dns_zone_name_servers
 }
 
-# -----------------------------------------------------------------------------
-# Application Gateway
-# -----------------------------------------------------------------------------
-
 output "app_gateway_public_ip" {
   description = "Public IP address of the Application Gateway — the ONLY public IP."
   value       = module.app_gateway.public_ip_address
 }
-
-# -----------------------------------------------------------------------------
-# AKS
-# -----------------------------------------------------------------------------
 
 output "aks_cluster_name" {
   description = "Name of the AKS cluster."
@@ -56,18 +40,10 @@ output "kube_config_raw" {
   sensitive   = true
 }
 
-# -----------------------------------------------------------------------------
-# ACR
-# -----------------------------------------------------------------------------
-
 output "acr_login_server" {
   description = "ACR login server URL (e.g., ctmp3acr.azurecr.io)."
   value       = module.aks.acr_login_server
 }
-
-# -----------------------------------------------------------------------------
-# Key Vault
-# -----------------------------------------------------------------------------
 
 output "key_vault_uri" {
   description = "URI of the Key Vault."
@@ -79,10 +55,6 @@ output "key_vault_name" {
   value       = module.key_vault.key_vault_name
 }
 
-# -----------------------------------------------------------------------------
-# Function App
-# -----------------------------------------------------------------------------
-
 output "function_app_name" {
   description = "Name of the Function App."
   value       = module.function_app.function_app_name
@@ -92,10 +64,6 @@ output "function_app_managed_identity_client_id" {
   description = "Client ID of the Function App's User-Assigned Managed Identity (used in AWS OIDC federation)."
   value       = module.function_app.function_app_identity_client_id
 }
-
-# -----------------------------------------------------------------------------
-# AI Foundry
-# -----------------------------------------------------------------------------
 
 output "ai_services_endpoint" {
   description = "Endpoint of the Azure AI Services account."
@@ -107,18 +75,10 @@ output "openai_deployment_name" {
   value       = module.ai_foundry.openai_deployment_name
 }
 
-# -----------------------------------------------------------------------------
-# Jumpbox
-# -----------------------------------------------------------------------------
-
 output "jumpbox_public_ip" {
   description = "Public IP address of the Jumpbox VM."
   value       = module.jumpbox.jumpbox_public_ip
 }
-
-# -----------------------------------------------------------------------------
-# Remote State Metadata for cert module
-# -----------------------------------------------------------------------------
 
 output "resource_group_name" {
   description = "The name of the resource group containing all resources."
@@ -135,10 +95,6 @@ output "key_vault_id" {
   value       = module.key_vault.key_vault_id
 }
 
-# -----------------------------------------------------------------------------
-# Database
-# -----------------------------------------------------------------------------
-
 output "database_fqdn" {
   description = "Fully Qualified Domain Name of the PostgreSQL server."
   value       = module.database.server_fqdn
@@ -148,10 +104,6 @@ output "database_name" {
   description = "Name of the created database."
   value       = module.database.database_name
 }
-
-# -----------------------------------------------------------------------------
-# Workload Identity
-# -----------------------------------------------------------------------------
 
 output "workload_identity_client_id" {
   description = "Client ID of the AKS Workload User-Assigned Managed Identity."

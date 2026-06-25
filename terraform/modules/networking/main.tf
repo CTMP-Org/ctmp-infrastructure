@@ -1,24 +1,4 @@
-# =============================================================================
-# Networking Module — Main Configuration
-# =============================================================================
-# Creates the foundational network layer:
-#   - Virtual Network (10.0.0.0/16) with 5 purpose-built subnets
-#   - 4 NSGs with zero-trust security rules (standalone rule resources)
-#   - 1 Public DNS Zone for external resolution
-#   - 6 Private DNS Zones for private endpoint resolution
-#   - Subnet-NSG associations and subnet delegations
-#
-# CIDR Plan:
-#   appgw-subnet:   10.0.1.0/24   — Application Gateway (only public-facing)
-#   aks-subnet:     10.0.2.0/22   — AKS node pools (1024 IPs for Azure CNI)
-#   func-subnet:    10.0.6.0/24   — Function App VNet integration
-#   pe-subnet:      10.0.7.0/24   — Private Endpoints for all PaaS services
-#   aks-api-subnet: 10.0.8.0/28   — AKS API server VNet integration
-# =============================================================================
 
-# =============================================================================
-# Virtual Network
-# =============================================================================
 
 resource "azurerm_virtual_network" "main" {
   name                = "${var.prefix}-vnet"
@@ -28,11 +8,6 @@ resource "azurerm_virtual_network" "main" {
   tags                = var.tags
 }
 
-# =============================================================================
-# Subnets
-# =============================================================================
-
-# Application Gateway subnet — must NOT have any delegation.
 resource "azurerm_subnet" "appgw" {
   name                 = "${var.prefix}-appgw-subnet"
   resource_group_name  = var.resource_group_name
@@ -40,7 +15,6 @@ resource "azurerm_subnet" "appgw" {
   address_prefixes     = [var.appgw_subnet_cidr]
 }
 
-# AKS node pool subnet — sized /22 for Azure CNI (up to 1024 pods/nodes).
 resource "azurerm_subnet" "aks" {
   name                 = "${var.prefix}-aks-subnet"
   resource_group_name  = var.resource_group_name
@@ -48,7 +22,6 @@ resource "azurerm_subnet" "aks" {
   address_prefixes     = [var.aks_subnet_cidr]
 }
 
-# Function App integration subnet — delegated to Microsoft.Web/serverFarms.
 resource "azurerm_subnet" "func" {
   name                 = "${var.prefix}-func-subnet"
   resource_group_name  = var.resource_group_name
@@ -67,7 +40,6 @@ resource "azurerm_subnet" "func" {
   }
 }
 
-# Private Endpoints subnet — used by Key Vault, ACR, Storage, AI Services.
 resource "azurerm_subnet" "pe" {
   name                 = "${var.prefix}-pe-subnet"
   resource_group_name  = var.resource_group_name
@@ -75,7 +47,6 @@ resource "azurerm_subnet" "pe" {
   address_prefixes     = [var.pe_subnet_cidr]
 }
 
-# AKS API server VNet integration — minimum /28 for API server delegation.
 resource "azurerm_subnet" "aks_api" {
   name                 = "${var.prefix}-aks-api-subnet"
   resource_group_name  = var.resource_group_name
@@ -94,7 +65,6 @@ resource "azurerm_subnet" "aks_api" {
   }
 }
 
-# Jumpbox subnet — for administrator connectivity to AKS
 resource "azurerm_subnet" "jumpbox" {
   name                 = "${var.prefix}-jumpbox-subnet"
   resource_group_name  = var.resource_group_name
@@ -102,7 +72,6 @@ resource "azurerm_subnet" "jumpbox" {
   address_prefixes     = [var.jumpbox_subnet_cidr]
 }
 
-# PostgreSQL Flexible Server delegated subnet
 resource "azurerm_subnet" "pg" {
   name                 = "${var.prefix}-pg-subnet"
   resource_group_name  = var.resource_group_name
@@ -120,14 +89,6 @@ resource "azurerm_subnet" "pg" {
     }
   }
 }
-
-
-# =============================================================================
-# Network Security Groups
-# =============================================================================
-# Zero-trust approach: define the NSG shell, then attach standalone rules.
-# This avoids inline security_rule blocks and supports AGIC rule injection.
-# =============================================================================
 
 resource "azurerm_network_security_group" "appgw" {
   name                = "${var.prefix}-appgw-nsg"
@@ -177,16 +138,6 @@ resource "azurerm_network_security_rule" "jumpbox_allow_ssh" {
   resource_group_name         = var.resource_group_name
   network_security_group_name = azurerm_network_security_group.jumpbox.name
 }
-
-
-# =============================================================================
-# NSG Rules — Application Gateway
-# =============================================================================
-# The App Gateway requires:
-#   1. Internet → 80/443 for public HTTP/HTTPS traffic
-#   2. GatewayManager → 65200-65535 for Azure infrastructure probes
-#   3. AzureLoadBalancer → Any for health probes
-# =============================================================================
 
 resource "azurerm_network_security_rule" "appgw_allow_http_internet" {
   name                        = "Allow-HTTP-Internet"
@@ -244,14 +195,6 @@ resource "azurerm_network_security_rule" "appgw_allow_azure_lb" {
   network_security_group_name = azurerm_network_security_group.appgw.name
 }
 
-# =============================================================================
-# NSG Rules — AKS
-# =============================================================================
-# Zero-trust: deny all inbound, then explicitly allow only from App Gateway
-# subnet on ports that backend services expose (80, 443, 8000-8006).
-# Also allow AzureLoadBalancer for internal LB health probes.
-# =============================================================================
-
 resource "azurerm_network_security_rule" "aks_allow_http_from_appgw" {
   name                        = "Allow-HTTP-From-AppGW"
   priority                    = 100
@@ -260,7 +203,7 @@ resource "azurerm_network_security_rule" "aks_allow_http_from_appgw" {
   protocol                    = "Tcp"
   source_port_range           = "*"
   destination_port_range      = "80"
-  source_address_prefix       = var.appgw_subnet_cidr # 10.0.1.0/24
+  source_address_prefix       = var.appgw_subnet_cidr 
   destination_address_prefix  = "*"
   resource_group_name         = var.resource_group_name
   network_security_group_name = azurerm_network_security_group.aks.name
@@ -322,12 +265,6 @@ resource "azurerm_network_security_rule" "aks_allow_outbound_azure_cloud" {
   network_security_group_name = azurerm_network_security_group.aks.name
 }
 
-# =============================================================================
-# NSG Rules — Function App
-# =============================================================================
-# Only allow HTTPS from the AKS subnet. Deny everything else.
-# =============================================================================
-
 resource "azurerm_network_security_rule" "func_allow_https_from_aks" {
   name                        = "Allow-HTTPS-From-AKS"
   priority                    = 100
@@ -336,7 +273,7 @@ resource "azurerm_network_security_rule" "func_allow_https_from_aks" {
   protocol                    = "Tcp"
   source_port_range           = "*"
   destination_port_range      = "443"
-  source_address_prefix       = var.aks_subnet_cidr # 10.0.2.0/22
+  source_address_prefix       = var.aks_subnet_cidr 
   destination_address_prefix  = "*"
   resource_group_name         = var.resource_group_name
   network_security_group_name = azurerm_network_security_group.func.name
@@ -355,12 +292,6 @@ resource "azurerm_network_security_rule" "func_deny_all_inbound" {
   resource_group_name         = var.resource_group_name
   network_security_group_name = azurerm_network_security_group.func.name
 }
-
-# =============================================================================
-# NSG Rules — Private Endpoints
-# =============================================================================
-# Allow HTTPS from AKS and Function App subnets only. Deny all other inbound.
-# =============================================================================
 
 resource "azurerm_network_security_rule" "pe_allow_https_from_aks" {
   name                        = "Allow-HTTPS-From-AKS"
@@ -418,10 +349,6 @@ resource "azurerm_network_security_rule" "pe_deny_all_inbound" {
   network_security_group_name = azurerm_network_security_group.pe.name
 }
 
-# =============================================================================
-# Subnet ↔ NSG Associations
-# =============================================================================
-
 resource "azurerm_subnet_network_security_group_association" "appgw" {
   subnet_id                 = azurerm_subnet.appgw.id
   network_security_group_id = azurerm_network_security_group.appgw.id
@@ -447,27 +374,11 @@ resource "azurerm_subnet_network_security_group_association" "jumpbox" {
   network_security_group_id = azurerm_network_security_group.jumpbox.id
 }
 
-
-# =============================================================================
-# Public DNS Zone
-# =============================================================================
-# Authoritative public DNS for the training portal. After deployment, delegate
-# the NS records from your domain registrar to the Azure-assigned name servers.
-# =============================================================================
-
 resource "azurerm_dns_zone" "public" {
   name                = var.public_dns_zone_name
   resource_group_name = var.resource_group_name
   tags                = var.tags
 }
-
-# =============================================================================
-# Private DNS Zones
-# =============================================================================
-# Each private DNS zone corresponds to an Azure PaaS service's private link
-# FQDN. They are linked to the VNet so that resources within the VNet can
-# resolve private endpoint IPs automatically.
-# =============================================================================
 
 resource "azurerm_private_dns_zone" "keyvault" {
   name                = "privatelink.vaultcore.azure.net"
@@ -516,14 +427,6 @@ resource "azurerm_private_dns_zone" "acr" {
   resource_group_name = var.resource_group_name
   tags                = var.tags
 }
-
-
-# =============================================================================
-# Private DNS Zone ↔ VNet Links
-# =============================================================================
-# Each private DNS zone must be linked to the VNet so internal resolution works.
-# Registration is disabled — records are managed by private endpoint DNS groups.
-# =============================================================================
 
 resource "azurerm_private_dns_zone_virtual_network_link" "keyvault" {
   name                  = "${var.prefix}-keyvault-dns-link"

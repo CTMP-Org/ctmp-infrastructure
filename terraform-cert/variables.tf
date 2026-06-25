@@ -1,6 +1,4 @@
-# =============================================================================
-# Certificate Renewal module — Variables
-# =============================================================================
+
 
 variable "acme_email" {
   description = "Email address for Let's Encrypt registration and renewal alerts."

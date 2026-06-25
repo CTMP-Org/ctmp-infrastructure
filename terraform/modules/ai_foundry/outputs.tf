@@ -1,6 +1,4 @@
-# =============================================================================
-# AI Foundry Module — Outputs
-# =============================================================================
+
 
 output "ai_services_id" {
   description = "Resource ID of the Azure AI Services (Cognitive) account."

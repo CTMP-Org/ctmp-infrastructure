@@ -1,8 +1,5 @@
-# =============================================================================
-# Networking Module — Outputs
-# =============================================================================
 
-# --- VNet ---
+
 output "vnet_id" {
   description = "Resource ID of the Virtual Network."
   value       = azurerm_virtual_network.main.id
@@ -13,7 +10,6 @@ output "vnet_name" {
   value       = azurerm_virtual_network.main.name
 }
 
-# --- Subnet IDs ---
 output "appgw_subnet_id" {
   description = "Resource ID of the Application Gateway subnet."
   value       = azurerm_subnet.appgw.id
@@ -49,8 +45,6 @@ output "pg_subnet_id" {
   value       = azurerm_subnet.pg.id
 }
 
-
-# --- NSG IDs ---
 output "appgw_nsg_id" {
   description = "Resource ID of the Application Gateway NSG."
   value       = azurerm_network_security_group.appgw.id
@@ -71,7 +65,6 @@ output "pe_nsg_id" {
   value       = azurerm_network_security_group.pe.id
 }
 
-# --- Public DNS Zone ---
 output "public_dns_zone_id" {
   description = "Resource ID of the public DNS zone."
   value       = azurerm_dns_zone.public.id
@@ -82,7 +75,6 @@ output "public_dns_zone_name_servers" {
   value       = azurerm_dns_zone.public.name_servers
 }
 
-# --- Private DNS Zone IDs ---
 output "keyvault_private_dns_zone_id" {
   description = "Resource ID of the privatelink.vaultcore.azure.net zone."
   value       = azurerm_private_dns_zone.keyvault.id

@@ -1,6 +1,4 @@
-# =============================================================================
-# Application Gateway Module — Outputs
-# =============================================================================
+
 
 output "app_gateway_id" {
   description = "Resource ID of the Application Gateway."

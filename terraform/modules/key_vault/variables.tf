@@ -1,8 +1,4 @@
-# =============================================================================
-# Key Vault Module — Variables
-# =============================================================================
-# Inputs for provisioning a Key Vault with RBAC, private endpoint, and DNS.
-# =============================================================================
+
 
 variable "resource_group_name" {
   description = "Name of the resource group for the Key Vault."
@@ -37,10 +33,6 @@ variable "sku_name" {
   default     = "standard"
 }
 
-# -----------------------------------------------------------------------------
-# Networking — Private Endpoint
-# -----------------------------------------------------------------------------
-
 variable "pe_subnet_id" {
   description = "Subnet ID where the Key Vault private endpoint will be placed."
   type        = string
@@ -55,10 +47,6 @@ variable "private_dns_zone_id" {
   description = "Resource ID of the privatelink.vaultcore.azure.net DNS zone."
   type        = string
 }
-
-# -----------------------------------------------------------------------------
-# RBAC — Principal IDs that need Key Vault access
-# -----------------------------------------------------------------------------
 
 variable "key_vault_admin_object_ids" {
   description = "List of Azure AD object IDs granted Key Vault Administrator role."

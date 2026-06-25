@@ -1,6 +1,4 @@
-# =============================================================================
-# Jumpbox Module — Variables
-# =============================================================================
+
 
 variable "resource_group_name" {
   description = "Name of the resource group."
@@ -44,6 +42,4 @@ variable "admin_ssh_public_key" {
   type        = string
   default     = ""
 }
-
-
 

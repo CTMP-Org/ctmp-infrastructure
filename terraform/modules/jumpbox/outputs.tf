@@ -1,6 +1,4 @@
-# =============================================================================
-# Jumpbox Module — Outputs
-# =============================================================================
+
 
 output "jumpbox_public_ip" {
   description = "Public IP address of the Jumpbox VM."

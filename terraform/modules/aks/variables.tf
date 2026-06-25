@@ -1,8 +1,4 @@
-# =============================================================================
-# AKS Module — Variables
-# =============================================================================
-# Inputs for the private AKS cluster, node pools, ACR, and AGIC integration.
-# =============================================================================
+
 
 variable "resource_group_name" {
   description = "Resource group name for AKS and ACR resources."
@@ -30,10 +26,6 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
-
-# -----------------------------------------------------------------------------
-# AKS Cluster Configuration
-# -----------------------------------------------------------------------------
 
 variable "kubernetes_version" {
   description = "Kubernetes version for the AKS cluster. Use 'az aks get-versions' to list available versions."
@@ -89,10 +81,6 @@ variable "user_pool_node_count" {
   default     = 1
 }
 
-# -----------------------------------------------------------------------------
-# Networking
-# -----------------------------------------------------------------------------
-
 variable "aks_subnet_id" {
   description = "Subnet ID for the AKS node pools (Azure CNI)."
   type        = string
@@ -112,10 +100,6 @@ variable "appgw_subnet_id" {
   description = "Subnet ID of the Application Gateway (for AGIC)."
   type        = string
 }
-
-# -----------------------------------------------------------------------------
-# ACR Configuration
-# -----------------------------------------------------------------------------
 
 variable "acr_name" {
   description = "Globally unique name for the Azure Container Registry (alphanumeric only)."

@@ -1,9 +1,4 @@
-# =============================================================================
-# Database Module — Main Configuration
-# =============================================================================
-# Provisions Azure Database for PostgreSQL Flexible Server inside a private VNet,
-# stores credentials in Key Vault, and configures private DNS resolution.
-# =============================================================================
+
 
 resource "azurerm_private_dns_zone" "pg" {
   name                = "${var.prefix}-pg-dns.postgres.database.azure.com"

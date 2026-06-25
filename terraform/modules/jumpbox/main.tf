@@ -1,12 +1,5 @@
-# =============================================================================
-# Jumpbox Module — Main Configuration
-# =============================================================================
-# Provisions a lightweight Linux Jumpbox VM inside the jumpbox subnet.
-# This VM acts as the secure management gateway for cluster administrators
-# to interact with the private AKS API server endpoint.
-# =============================================================================
 
-# --- Generate SSH Key dynamically if not provided ---
+
 resource "tls_private_key" "jumpbox" {
   count     = var.admin_ssh_public_key == "" ? 1 : 0
   algorithm = "RSA"
@@ -19,9 +12,6 @@ resource "azurerm_key_vault_secret" "jumpbox_private_key" {
   value        = tls_private_key.jumpbox[0].private_key_pem
   key_vault_id = var.key_vault_id
 }
-
-
-
 
 resource "azurerm_public_ip" "jumpbox" {
   name                = "${var.prefix}-jumpbox-pip"
@@ -46,7 +36,6 @@ resource "azurerm_network_interface" "jumpbox" {
   }
 }
 
-# --- Automatically bootstrap VM with azure CLI, kubectl, and kubelogin ---
 locals {
   custom_data = <<-EOF
   #!/bin/bash
@@ -65,7 +54,7 @@ resource "azurerm_linux_virtual_machine" "jumpbox" {
   name                            = "${var.prefix}-jumpbox"
   location                        = var.location
   resource_group_name             = var.resource_group_name
-  size                            = "Standard_D2als_v6" # Cost-effective instance size for jumpbox operations
+  size                            = "Standard_D2als_v6" 
   admin_username                  = var.admin_username
   disable_password_authentication = true
   tags                            = var.tags
@@ -80,8 +69,6 @@ resource "azurerm_linux_virtual_machine" "jumpbox" {
   }
 
   os_disk {
-
-
 
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"

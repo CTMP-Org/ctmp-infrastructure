@@ -1,9 +1,4 @@
-# =============================================================================
-# AI Foundry Module — Variables
-# =============================================================================
-# Inputs for Azure AI Services, AI Foundry Hub & Project, and GPT-4o deployment.
-# All resources are private — no public network access.
-# =============================================================================
+
 
 variable "resource_group_name" {
   description = "Resource group for AI Foundry resources."
@@ -27,10 +22,6 @@ variable "tags" {
   default     = {}
 }
 
-# -----------------------------------------------------------------------------
-# Networking — Private Endpoints
-# -----------------------------------------------------------------------------
-
 variable "pe_subnet_id" {
   description = "Subnet ID for AI Foundry private endpoints."
   type        = string
@@ -51,10 +42,6 @@ variable "openai_private_dns_zone_id" {
   type        = string
 }
 
-# -----------------------------------------------------------------------------
-# OpenAI Deployment Configuration
-# -----------------------------------------------------------------------------
-
 variable "openai_model_name" {
   description = "Model name to deploy (e.g., gpt-4o)."
   type        = string
@@ -72,10 +59,6 @@ variable "openai_deployment_sku_capacity" {
   type        = number
   default     = 10
 }
-
-# -----------------------------------------------------------------------------
-# Dependencies
-# -----------------------------------------------------------------------------
 
 variable "key_vault_id" {
   description = "Resource ID of the Key Vault for AI Foundry Hub."

@@ -1,6 +1,4 @@
-# =============================================================================
-# Database Module — Outputs
-# =============================================================================
+
 
 output "server_fqdn" {
   description = "Fully Qualified Domain Name of the PostgreSQL server."

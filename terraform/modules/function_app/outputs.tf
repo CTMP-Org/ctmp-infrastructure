@@ -1,6 +1,4 @@
-# =============================================================================
-# Function App Module — Outputs
-# =============================================================================
+
 
 output "function_app_id" {
   description = "Resource ID of the Linux Function App."
