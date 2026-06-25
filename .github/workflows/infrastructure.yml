@@ -203,16 +203,35 @@ jobs:
 
       - name: Commit GitOps workload identity values
         if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITOPS_REPO_PAT }}
         run: |
           cd ../ctmp-gitops-repo
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add manifests/*/values-dev.yaml manifests/*/values-prod.yaml
+          
           if git diff --cached --quiet; then
             echo "GitOps workload identity values are already current."
           else
             git commit -m "Sync workload identity client ID (${{ env.ENV_NAME }})"
-            git push origin ${{ github.ref_name }}
+            
+            if [ "${{ github.ref_name }}" = "main" ]; then
+              BRANCH_NAME="sync-workload-identity-prod-${{ github.run_number }}"
+              echo "Creating and pushing to temporary branch $BRANCH_NAME..."
+              git checkout -b "$BRANCH_NAME"
+              git push origin "$BRANCH_NAME"
+              
+              echo "Creating pull request to merge $BRANCH_NAME into main..."
+              gh pr create \
+                --title "chore(prod): sync workload identity client ID to ${{ env.VERSION }}" \
+                --body "Automated sync of Workload Identity client ID for the production environment from runner job ${{ github.run_id }}." \
+                --base main \
+                --head "$BRANCH_NAME"
+            else
+              echo "Pushing directly to dev branch..."
+              git push origin ${{ github.ref_name }}
+            fi
           fi
 
       - name: Remove IP from Key Vault Firewall
