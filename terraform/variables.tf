@@ -199,9 +199,3 @@ variable "user_pool_max_count" {
   type        = number
   default     = 6
 }
-
-
-
-
-
-

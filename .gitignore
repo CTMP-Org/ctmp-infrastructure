@@ -8,6 +8,8 @@ crash.log
 !terraform/prod.tfvars
 *.tfvars.json
 tfplan
+.terraform.lock.hcl
+
 
 # OS files
 .DS_Store
